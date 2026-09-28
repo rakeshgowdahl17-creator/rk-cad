@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#111827">
+<title>RK CAD - Drawing</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#111827;color:#fff;overflow:hidden}
+.top{height:58px;display:flex;align-items:center;gap:8px;padding:8px;background:#1f2937}
+.top h1{font-size:18px;margin:0 8px 0 0}
+button,select{min-height:42px;border:1px solid #4b5563;border-radius:8px;background:#374151;color:#fff;padding:8px 12px;font-size:15px}
+button:active{transform:scale(.97)}
+#canvas{display:block;background:#fff;touch-action:none;width:100%;height:calc(100vh - 58px)}
+.status{position:fixed;left:10px;bottom:10px;background:#111827dd;padding:7px 10px;border-radius:7px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="top">
+<h1>RK CAD</h1>
+<select id="tool" aria-label="Drawing tool">
+<option value="pen">Line / Pen</option>
+<option value="rect">Rectangle</option>
+<option value="circle">Circle</option>
+<option value="erase">Eraser</option>
+</select>
+<button id="undo">Undo</button>
+<button id="clear">Clear</button>
+<button id="save">Save PNG</button>
+</div>
+<canvas id="canvas"></canvas>
+<div class="status" id="status">Ready — touch and draw</div>
+<script>
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+const tool=document.getElementById("tool"),status=document.getElementById("status");
+let drawing=false,startX=0,startY=0,lastX=0,lastY=0,snapshot=null;
+let history=[];
+function resize(){
+  const old=document.createElement("canvas"); old.width=canvas.width; old.height=canvas.height;
+  if(canvas.width&&canvas.height) old.getContext("2d").drawImage(canvas,0,0);
+  canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight;
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(old.width&&old.height) ctx.drawImage(old,0,0,old.width,old.height,0,0,canvas.width,canvas.height);
+  ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#111";
+}
+function pos(e){
+ const r=canvas.getBoundingClientRect();
+ return {x:(e.clientX-r.left)*(canvas.width/r.width),y:(e.clientY-r.top)*(canvas.height/r.height)};
+}
+function saveState(){history.push(canvas.toDataURL());if(history.length>30)history.shift()}
+function restore(data){
+ const im=new Image();im.onload=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(im,0,0,canvas.width,canvas.height)};im.src=data;
+}
+canvas.addEventListener("pointerdown",e=>{
+ e.preventDefault();canvas.setPointerCapture(e.pointerId);
+ const p=pos(e);drawing=true;startX=lastX=p.x;startY=lastY=p.y;
+ saveState();snapshot=ctx.getImageData(0,0,canvas.width,canvas.height);
+});
+canvas.addEventListener("pointermove",e=>{
+ if(!drawing)return;e.preventDefault();const p=pos(e);
+ if(tool.value==="pen"||tool.value==="erase"){
+  ctx.strokeStyle=tool.value==="erase"?"#fff":"#111";ctx.lineWidth=tool.value==="erase"?20:2;
+  ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();lastX=p.x;lastY=p.y;
+ }else{
+  ctx.putImageData(snapshot,0,0);ctx.strokeStyle="#111";ctx.lineWidth=2;ctx.beginPath();
+  if(tool.value==="rect")ctx.rect(startX,startY,p.x-startX,p.y-startY);
+  else{const r=Math.hypot(p.x-startX,p.y-startY);ctx.arc(startX,startY,r,0,Math.PI*2)}
+  ctx.stroke();
+ }
+});
+canvas.addEventListener("pointerup",()=>{drawing=false;status.textContent="Drawing saved in Undo history"});
+canvas.addEventListener("pointercancel",()=>drawing=false);
+document.getElementById("undo").onclick=()=>{if(history.length){restore(history.pop());status.textContent="Undo"}}; 
+document.getElementById("clear").onclick=()=>{saveState();ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);status.textContent="Canvas cleared"};
+document.getElementById("save").onclick=()=>{
+ const a=document.createElement("a");a.download="RK-CAD-Drawing.png";a.href=canvas.toDataURL("image/png");a.click();status.textContent="PNG saved";
+};
+window.addEventListener("resize",resize); resize();
+</script>
+</body>
+</html>

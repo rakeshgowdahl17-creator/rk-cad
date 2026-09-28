@@ -1,0 +1,8 @@
+RK CAD drawing fix
+
+1. Upload drawing.html to the root of the rk-cad repository.
+2. In index.html add this button/link inside the .actions section:
+<a class="btn primary" href="drawing.html">Open Drawing</a>
+3. Commit changes.
+4. Wait 1-2 minutes and open the website.
+5. Tap Open Drawing. You can draw with touch, use Line/Pen, Rectangle, Circle, Eraser, Undo, Clear and Save PNG.
