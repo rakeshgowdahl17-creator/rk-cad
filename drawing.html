@@ -1,669 +1,1733 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#111827">
-<title>RK CAD - Drawing</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#20252b">
+<title>RK CAD 2021 Style</title>
 
 <style>
 *{box-sizing:border-box}
 
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#111827;
-  color:#fff;
-  overflow:hidden;
+html,body{
+ margin:0;
+ height:100%;
+ font-family:Arial,sans-serif;
+ background:#20252b;
+ color:#eee;
+ overflow:hidden
 }
 
-.top{
-  min-height:58px;
-  display:flex;
-  align-items:center;
-  gap:7px;
-  padding:7px 8px;
-  background:#1f2937;
-  overflow-x:auto;
-  white-space:nowrap;
+#app{
+ height:100%;
+ display:flex;
+ flex-direction:column
 }
 
-.top h1{
-  font-size:18px;
-  margin:0 8px 0 0;
+#top{
+ height:52px;
+ display:flex;
+ align-items:center;
+ gap:6px;
+ padding:5px 7px;
+ background:#2b3036;
+ overflow:auto;
+ white-space:nowrap
+}
+
+#top b{
+ font-size:16px;
+ margin-right:8px;
+ color:#f0f0f0
 }
 
 button,select,input{
-  min-height:42px;
-  border:1px solid #4b5563;
-  border-radius:8px;
-  background:#374151;
-  color:#fff;
-  padding:8px 11px;
-  font-size:14px;
+ background:#353b42;
+ color:#eee;
+ border:1px solid #59616a;
+ border-radius:5px;
+ min-height:38px;
+ padding:7px 9px;
+ font-size:13px
 }
 
-button:active{
-  transform:scale(.97);
+button.active{
+ background:#1769aa
+}
+
+#tools{
+ height:46px;
+ display:flex;
+ gap:5px;
+ align-items:center;
+ padding:4px 7px;
+ background:#30363d;
+ overflow:auto;
+ white-space:nowrap
+}
+
+#main{
+ position:relative;
+ flex:1;
+ min-height:0
 }
 
 #canvas{
-  display:block;
-  background:#fff;
-  width:100%;
-  height:calc(100vh - 58px);
-  touch-action:none;
+ position:absolute;
+ inset:0;
+ width:100%;
+ height:100%;
+ background:#fff;
+ touch-action:none
 }
 
-.status{
-  position:fixed;
-  left:10px;
-  bottom:10px;
-  background:#111827dd;
-  padding:7px 10px;
-  border-radius:7px;
-  font-size:12px;
-  z-index:3;
+#coords{
+ position:absolute;
+ left:8px;
+ bottom:7px;
+ background:#20252bdd;
+ padding:5px 8px;
+ border-radius:4px;
+ font:12px monospace;
+ z-index:4
 }
 
-.panel{
-  position:fixed;
-  right:10px;
-  top:68px;
-  background:#111827ee;
-  padding:10px;
-  border:1px solid #4b5563;
-  border-radius:10px;
-  display:none;
-  z-index:4;
-  max-width:220px;
+#help{
+ position:absolute;
+ right:8px;
+ bottom:7px;
+ background:#20252bdd;
+ padding:5px 8px;
+ border-radius:4px;
+ font-size:11px;
+ z-index:4
 }
 
-.panel.show{
-  display:block;
+#layerPanel{
+ position:absolute;
+ right:8px;
+ top:8px;
+ background:#20252bf2;
+ border:1px solid #59616a;
+ border-radius:6px;
+ padding:8px;
+ width:210px;
+ display:none;
+ z-index:10
 }
 
-.panel label{
-  display:block;
-  font-size:12px;
-  margin:5px 0;
+#layerPanel.show{
+ display:block
 }
 
-.panel input{
-  width:100%;
-  min-height:38px;
+.row{
+ display:flex;
+ gap:5px;
+ margin:5px 0
+}
+
+.row>*{
+ flex:1
+}
+
+#status{
+ height:25px;
+ background:#181c20;
+ color:#cbd2d9;
+ font:11px monospace;
+ padding:6px 9px
 }
 </style>
 </head>
 
 <body>
 
-<div class="top">
-  <h1>RK CAD</h1>
+<div id="app">
 
-  <select id="tool">
-    <option value="pen">Line / Pen</option>
-    <option value="wall">Wall</option>
-    <option value="rect">Rectangle</option>
-    <option value="circle">Circle</option>
-    <option value="dimension">Dimension</option>
-    <option value="text">Text</option>
-    <option value="measure">Measure</option>
-    <option value="erase">Eraser</option>
-  </select>
+<div id="top">
 
-  <button id="grid">Grid</button>
-  <button id="undo">Undo</button>
-  <button id="clear">Clear</button>
-  <button id="save">Save PNG</button>
+<b>RK CAD</b>
+
+<button id="new">New</button>
+<button id="undo">Undo</button>
+<button id="redo">Redo</button>
+<button id="open">Open</button>
+<button id="save">Save</button>
+<button id="png">PNG</button>
+
+<button id="grid">Grid</button>
+<button id="snap">Snap</button>
+<button id="ortho">Ortho</button>
+<button id="layers">Layers</button>
+
+<select id="color">
+<option value="#111">Black</option>
+<option value="#c62828">Red</option>
+<option value="#1565c0">Blue</option>
+<option value="#2e7d32">Green</option>
+</select>
+
 </div>
 
-<div class="panel" id="textPanel">
-  <label for="textInput">Text</label>
-  <input id="textInput" value="Room">
-  <button id="textOk" style="margin-top:7px;width:100%">
-    Place Text
-  </button>
+<div id="tools">
+
+<select id="tool">
+
+<option value="select">Select</option>
+<option value="line">Line</option>
+<option value="polyline">Polyline</option>
+<option value="rect">Rectangle</option>
+<option value="circle">Circle</option>
+<option value="arc">Arc</option>
+<option value="wall">Wall</option>
+<option value="dim">Dimension</option>
+<option value="text">Text</option>
+<option value="erase">Erase</option>
+<option value="move">Move</option>
+<option value="copy">Copy</option>
+<option value="rotate">Rotate</option>
+<option value="offset">Offset</option>
+<option value="measure">Measure</option>
+
+</select>
+
+<button id="zoomIn">Zoom +</button>
+<button id="zoomOut">Zoom −</button>
+<button id="fit">Fit</button>
+
+<button id="exportDxf">Export DXF</button>
+<button id="clear">Clear</button>
+
 </div>
+
+<div id="main">
 
 <canvas id="canvas"></canvas>
 
-<div class="status" id="status">
-  Ready — choose a tool and draw
+<div id="coords">
+X: 0.00&nbsp;&nbsp; Y: 0.00
+</div>
+
+<div id="help">
+Tap/drag to draw • pinch/scroll to zoom • 2-finger pan
+</div>
+
+<div id="layerPanel">
+
+<b>Layers</b>
+
+<div class="row">
+<input id="layerName" value="0">
+<button id="addLayer">Add</button>
+</div>
+
+<select id="layerList" size="5" style="width:100%">
+<option>0</option>
+<option>WALL</option>
+<option>DIMENSIONS</option>
+<option>TEXT</option>
+</select>
+
+<div class="row">
+<button id="delLayer">Delete</button>
+<button id="setLayer">Set Current</button>
+</div>
+
+</div>
+
+</div>
+
+<div id="status">
+Ready
+</div>
+
 </div>
 
 <script>
 
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
+const c=document.getElementById('canvas');
+const ctx=c.getContext('2d');
 
-const tool=document.getElementById("tool");
-const status=document.getElementById("status");
+let W=0;
+let H=0;
 
-const textPanel=document.getElementById("textPanel");
-const textInput=document.getElementById("textInput");
+let tool='select';
+let color='#111';
+
+let gridOn=true;
+let snapOn=true;
+let orthoOn=false;
+
+let scale=1;
+let ox=0;
+let oy=0;
 
 let drawing=false;
-let startX=0;
-let startY=0;
-let lastX=0;
-let lastY=0;
-let snapshot=null;
+let start=null;
+let preview=null;
+let items=[];
 
-let history=[];
-let gridOn=false;
-let pendingText=null;
+let undoStack=[];
+let redoStack=[];
 
-const SCALE=20;
+let points=[];
+
+let currentLayer='0';
+
+let layers=[
+ '0',
+ 'WALL',
+ 'DIMENSIONS',
+ 'TEXT'
+];
+
+const gridStep=25;
+
+
+/* RESIZE */
 
 function resize(){
 
-  const old=document.createElement("canvas");
+ W=c.clientWidth;
+ H=c.clientHeight;
 
-  old.width=canvas.width;
-  old.height=canvas.height;
+ c.width=W*devicePixelRatio;
+ c.height=H*devicePixelRatio;
 
-  if(canvas.width && canvas.height){
-    old.getContext("2d").drawImage(canvas,0,0);
-  }
+ ctx.setTransform(
+  devicePixelRatio,
+  0,
+  0,
+  devicePixelRatio,
+  0,
+  0
+ );
 
-  canvas.width=canvas.clientWidth;
-  canvas.height=canvas.clientHeight;
-
-  ctx.fillStyle="#fff";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  if(old.width && old.height){
-    ctx.drawImage(
-      old,
-      0,0,old.width,old.height,
-      0,0,canvas.width,canvas.height
-    );
-  }
-
-  drawGrid();
-
-  ctx.lineWidth=2;
-  ctx.lineCap="round";
-  ctx.lineJoin="round";
-  ctx.strokeStyle="#111";
+ render();
 }
+
+
+/* COORDINATES */
+
+function world(p){
+
+ return {
+  x:(p.x-ox)/scale,
+  y:(p.y-oy)/scale
+ };
+
+}
+
+
+function screen(p){
+
+ return {
+  x:p.x*scale+ox,
+  y:p.y*scale+oy
+ };
+
+}
+
 
 function pos(e){
 
-  const r=canvas.getBoundingClientRect();
+ const r=c.getBoundingClientRect();
 
-  return {
-    x:(e.clientX-r.left)*(canvas.width/r.width),
-    y:(e.clientY-r.top)*(canvas.height/r.height)
-  };
+ return {
+  x:e.clientX-r.left,
+  y:e.clientY-r.top
+ };
+
 }
 
-function saveState(){
 
-  history.push(canvas.toDataURL());
+/* SNAP */
 
-  if(history.length>40){
-    history.shift();
-  }
+function snap(p){
+
+ if(!snapOn)
+  return p;
+
+ return {
+  x:Math.round(p.x/gridStep)*gridStep,
+  y:Math.round(p.y/gridStep)*gridStep
+ };
+
 }
 
-function restore(data){
 
-  const im=new Image();
+/* HISTORY */
 
-  im.onload=()=>{
+function saveHistory(){
 
-    ctx.clearRect(
-      0,0,
-      canvas.width,
-      canvas.height
-    );
+ undoStack.push(
+  JSON.stringify(items)
+ );
 
-    ctx.fillStyle="#fff";
+ if(undoStack.length>50)
+  undoStack.shift();
 
-    ctx.fillRect(
-      0,0,
-      canvas.width,
-      canvas.height
-    );
+ redoStack=[];
 
-    ctx.drawImage(
-      im,
-      0,0,
-      canvas.width,
-      canvas.height
-    );
-
-    drawGrid();
-  };
-
-  im.src=data;
 }
+
+
+/* STATUS */
+
+function setStatus(s){
+
+ document.getElementById(
+  'status'
+ ).textContent=s;
+
+}
+
+
+/* GRID */
 
 function drawGrid(){
 
-  if(!gridOn) return;
+ if(!gridOn)
+  return;
 
-  ctx.save();
+ ctx.save();
 
-  ctx.strokeStyle="#dfe3e8";
-  ctx.lineWidth=1;
+ ctx.strokeStyle='#e6e6e6';
+ ctx.lineWidth=1;
 
-  const step=25;
+ const left=(-ox/scale);
+ const top=(-oy/scale);
 
-  for(let x=0;x<canvas.width;x+=step){
+ const right=(W-ox)/scale;
+ const bottom=(H-oy)/scale;
 
-    ctx.beginPath();
-    ctx.moveTo(x,0);
-    ctx.lineTo(x,canvas.height);
-    ctx.stroke();
-  }
+ let step=gridStep;
 
-  for(let y=0;y<canvas.height;y+=step){
+ while(step*scale<10)
+  step*=5;
 
-    ctx.beginPath();
-    ctx.moveTo(0,y);
-    ctx.lineTo(canvas.width,y);
-    ctx.stroke();
-  }
+ for(
+  let x=Math.floor(left/step)*step;
+  x<right;
+  x+=step
+ ){
 
-  ctx.restore();
-}
-
-function meters(px){
-
-  return (px/SCALE).toFixed(2);
-}
-
-function drawDimension(x1,y1,x2,y2){
-
-  const dx=x2-x1;
-  const dy=y2-y1;
-
-  const len=Math.hypot(dx,dy);
-
-  if(!len) return;
-
-  const ux=dx/len;
-  const uy=dy/len;
-
-  const nx=-uy;
-  const ny=ux;
-
-  const off=14;
-
-  const ax=x1+nx*off;
-  const ay=y1+ny*off;
-
-  const bx=x2+nx*off;
-  const by=y2+ny*off;
-
-  ctx.save();
-
-  ctx.strokeStyle="#111";
-  ctx.fillStyle="#111";
-  ctx.lineWidth=1.5;
+  let a=screen({
+   x:x,
+   y:0
+  });
 
   ctx.beginPath();
+  ctx.moveTo(a.x,0);
+  ctx.lineTo(a.x,H);
+  ctx.stroke();
 
-  ctx.moveTo(x1,y1);
-  ctx.lineTo(ax,ay);
+ }
 
-  ctx.moveTo(x2,y2);
-  ctx.lineTo(bx,by);
+ for(
+  let y=Math.floor(top/step)*step;
+  y<bottom;
+  y+=step
+ ){
 
-  ctx.moveTo(ax,ay);
-  ctx.lineTo(bx,by);
+  let a=screen({
+   x:0,
+   y:y
+  });
+
+  ctx.beginPath();
+  ctx.moveTo(0,a.y);
+  ctx.lineTo(W,a.y);
+  ctx.stroke();
+
+ }
+
+ ctx.restore();
+
+}
+
+
+/* DRAW ITEM */
+
+function drawItem(it){
+
+ const a=screen(
+  it.a||{x:0,y:0}
+ );
+
+ const b=screen(
+  it.b||it.a||{x:0,y:0}
+ );
+
+ ctx.strokeStyle=it.color||'#111';
+ ctx.fillStyle=it.color||'#111';
+
+ ctx.lineWidth=
+  (it.width||2)*
+  Math.max(.6,scale);
+
+ ctx.lineCap='round';
+ ctx.lineJoin='round';
+
+ ctx.beginPath();
+
+
+ if(
+  it.type==='line' ||
+  it.type==='wall' ||
+  it.type==='dim' ||
+  it.type==='moveLine'
+ ){
+
+  ctx.moveTo(a.x,a.y);
+  ctx.lineTo(b.x,b.y);
 
   ctx.stroke();
 
-  const ah=7;
 
-  ctx.beginPath();
+  if(it.type==='wall'){
 
-  ctx.moveTo(ax,ay);
-  ctx.lineTo(
-    ax+ux*ah+nx*ah/2,
-    ay+uy*ah+ny*ah/2
+   ctx.lineWidth=
+    10*Math.max(.5,scale);
+
+   ctx.beginPath();
+
+   ctx.moveTo(a.x,a.y);
+   ctx.lineTo(b.x,b.y);
+
+   ctx.stroke();
+
+  }
+
+
+  if(it.type==='dim'){
+
+   ctx.lineWidth=1;
+   ctx.strokeStyle='#555';
+
+   ctx.beginPath();
+
+   ctx.moveTo(a.x,a.y);
+   ctx.lineTo(b.x,b.y);
+
+   ctx.stroke();
+
+   ctx.fillStyle='#111';
+   ctx.font='12px Arial';
+
+   ctx.fillText(
+    (
+     Math.hypot(
+      it.b.x-it.a.x,
+      it.b.y-it.a.y
+     )/100
+    ).toFixed(2)+' m',
+    (a.x+b.x)/2+4,
+    (a.y+b.y)/2-4
+   );
+
+  }
+
+ }
+
+
+ else if(it.type==='rect'){
+
+  ctx.strokeRect(
+   a.x,
+   a.y,
+   b.x-a.x,
+   b.y-a.y
   );
 
-  ctx.moveTo(ax,ay);
-  ctx.lineTo(
-    ax+ux*ah-nx*ah/2,
-    ay+uy*ah-ny*ah/2
-  );
+ }
 
-  ctx.moveTo(bx,by);
-  ctx.lineTo(
-    bx-ux*ah+nx*ah/2,
-    by-uy*ah+ny*ah/2
-  );
 
-  ctx.moveTo(bx,by);
-  ctx.lineTo(
-    bx-ux*ah-nx*ah/2,
-    by-uy*ah-ny*ah/2
+ else if(it.type==='circle'){
+
+  ctx.arc(
+   a.x,
+   a.y,
+   Math.hypot(
+    b.x-a.x,
+    b.y-a.y
+   ),
+   0,
+   Math.PI*2
   );
 
   ctx.stroke();
 
-  ctx.font="13px Arial";
-  ctx.textAlign="center";
-  ctx.textBaseline="bottom";
+ }
+
+
+ else if(it.type==='arc'){
+
+  let r=Math.hypot(
+   b.x-a.x,
+   b.y-a.y
+  );
+
+  ctx.arc(
+   a.x,
+   a.y,
+   r,
+   0,
+   Math.PI*1.5
+  );
+
+  ctx.stroke();
+
+ }
+
+
+ else if(it.type==='text'){
+
+  ctx.font='16px Arial';
 
   ctx.fillText(
-    meters(len)+" m",
-    (ax+bx)/2,
-    (ay+by)/2-3
+   it.text||'Text',
+   a.x,
+   a.y
   );
 
-  ctx.restore();
-}
+ }
 
-function preview(){
 
-  ctx.putImageData(snapshot,0,0);
+ else if(
+  it.type==='polyline' &&
+  it.pts
+ ){
 
-  drawGrid();
+  ctx.moveTo(
+   screen(it.pts[0]).x,
+   screen(it.pts[0]).y
+  );
 
-  const dx=lastX-startX;
-  const dy=lastY-startY;
+  it.pts
+   .slice(1)
+   .forEach(p=>{
 
-  ctx.strokeStyle="#111";
-  ctx.fillStyle="#111";
-  ctx.lineWidth=2;
-
-  ctx.beginPath();
-
-  if(tool.value==="rect"){
-
-    ctx.rect(
-      startX,
-      startY,
-      dx,
-      dy
+    ctx.lineTo(
+     screen(p).x,
+     screen(p).y
     );
 
-  }else if(tool.value==="circle"){
-
-    const r=Math.hypot(dx,dy);
-
-    ctx.arc(
-      startX,
-      startY,
-      r,
-      0,
-      Math.PI*2
-    );
-
-  }else if(tool.value==="wall"){
-
-    ctx.lineWidth=10;
-
-    ctx.moveTo(startX,startY);
-    ctx.lineTo(lastX,lastY);
-  }
+   });
 
   ctx.stroke();
 
-  if(tool.value==="dimension"){
+ }
 
-    drawDimension(
-      startX,
-      startY,
-      lastX,
-      lastY
-    );
-  }
-
-  if(tool.value==="measure"){
-
-    ctx.save();
-
-    ctx.strokeStyle="#555";
-    ctx.setLineDash([5,4]);
-
-    ctx.beginPath();
-
-    ctx.moveTo(startX,startY);
-    ctx.lineTo(lastX,lastY);
-
-    ctx.stroke();
-
-    ctx.restore();
-
-    ctx.fillStyle="#111";
-    ctx.font="14px Arial";
-
-    ctx.fillText(
-      meters(Math.hypot(dx,dy))+" m",
-      lastX+8,
-      lastY-8
-    );
-  }
 }
 
-canvas.addEventListener("pointerdown",e=>{
 
-  e.preventDefault();
+/* RENDER */
 
-  canvas.setPointerCapture(e.pointerId);
+function render(){
 
-  const p=pos(e);
+ ctx.fillStyle='#fff';
 
-  if(tool.value==="text"){
+ ctx.fillRect(
+  0,
+  0,
+  W,
+  H
+ );
 
-    pendingText=p;
+ drawGrid();
 
-    textPanel.classList.add("show");
+ items.forEach(
+  drawItem
+ );
 
-    textInput.focus();
+ if(preview)
+  drawItem(preview);
 
+}
+
+
+/* SELECT */
+
+function selectedItem(p){
+
+ let best=-1;
+
+ let d=12/scale;
+
+ items.forEach(
+  (it,i)=>{
+
+   let q=it.a;
+
+   if(!q)
     return;
+
+   let dd=Math.hypot(
+    p.x-q.x,
+    p.y-q.y
+   );
+
+   if(dd<d){
+
+    d=dd;
+    best=i;
+
+   }
+
+
+   if(it.b){
+
+    let dx=
+     it.b.x-it.a.x;
+
+    let dy=
+     it.b.y-it.a.y;
+
+    let t=
+     (
+      (p.x-it.a.x)*dx+
+      (p.y-it.a.y)*dy
+     )/
+     (dx*dx+dy*dy||1);
+
+    t=Math.max(
+     0,
+     Math.min(1,t)
+    );
+
+    let x=
+     it.a.x+t*dx;
+
+    let y=
+     it.a.y+t*dy;
+
+    dd=Math.hypot(
+     p.x-x,
+     p.y-y
+    );
+
+    if(dd<d){
+
+     d=dd;
+     best=i;
+
+    }
+
+   }
+
   }
+ );
 
-  drawing=true;
+ return best;
 
-  startX=lastX=p.x;
-  startY=lastY=p.y;
+}
 
-  saveState();
 
-  snapshot=ctx.getImageData(
-    0,
-    0,
-    canvas.width,
-    canvas.height
+/* TEXT */
+
+function finishText(p){
+
+ let t=prompt(
+  'Enter text',
+  'ROOM'
+ );
+
+ if(t){
+
+  saveHistory();
+
+  items.push({
+
+   type:'text',
+   a:p,
+   text:t,
+   layer:currentLayer,
+   color:color
+
+  });
+
+  render();
+
+ }
+
+}
+
+
+/* POINTER DOWN */
+
+function pointerDown(e){
+
+ const s=pos(e);
+
+ const w=snap(
+  world(s)
+ );
+
+ start=w;
+
+ drawing=true;
+
+ points=[w];
+
+
+ if(tool==='select'){
+
+  let i=selectedItem(w);
+
+  setStatus(
+   i>=0
+    ?'Selected item '+(i+1)
+    :'No item selected'
   );
-});
-
-canvas.addEventListener("pointermove",e=>{
-
-  if(!drawing) return;
-
-  e.preventDefault();
-
-  const p=pos(e);
-
-  lastX=p.x;
-  lastY=p.y;
-
-  if(
-    tool.value==="pen" ||
-    tool.value==="erase"
-  ){
-
-    ctx.strokeStyle=
-      tool.value==="erase"
-      ? "#fff"
-      : "#111";
-
-    ctx.lineWidth=
-      tool.value==="erase"
-      ? 22
-      : 2;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      startX,
-      startY
-    );
-
-    ctx.lineTo(
-      lastX,
-      lastY
-    );
-
-    ctx.stroke();
-
-    startX=lastX;
-    startY=lastY;
-
-  }else{
-
-    preview();
-  }
-});
-
-canvas.addEventListener("pointerup",()=>{
-
-  if(!drawing) return;
 
   drawing=false;
 
-  if(tool.value==="measure"){
+  return;
 
-    status.textContent=
-      "Distance: "+
-      meters(
-        Math.hypot(
-          lastX-startX,
-          lastY-startY
-        )
-      )+
-      " m";
+ }
 
-  }else{
 
-    status.textContent=
-      "Drawing added to Undo history";
+ if(tool==='text'){
+
+  finishText(w);
+
+  drawing=false;
+
+  return;
+
+ }
+
+
+ if(tool==='erase'){
+
+  let i=selectedItem(w);
+
+  if(i>=0){
+
+   saveHistory();
+
+   items.splice(
+    i,
+    1
+   );
+
+   render();
+
+   setStatus(
+    'Erased'
+   );
+
   }
-});
 
-canvas.addEventListener(
-  "pointercancel",
-  ()=>{
-    drawing=false;
+ }
+
+}
+
+
+/* POINTER MOVE */
+
+function pointerMove(e){
+
+ let s=pos(e);
+
+ let w=snap(
+  world(s)
+ );
+
+ document.getElementById(
+  'coords'
+ ).textContent=
+  'X: '+
+  (w.x/100).toFixed(2)+
+  '  Y: '+
+  (w.y/100).toFixed(2);
+
+
+ if(!drawing)
+  return;
+
+
+ if(
+  orthoOn &&
+  start
+ ){
+
+  let dx=
+   w.x-start.x;
+
+  let dy=
+   w.y-start.y;
+
+  if(
+   Math.abs(dx)>
+   Math.abs(dy)
+  )
+   w.y=start.y;
+  else
+   w.x=start.x;
+
+ }
+
+
+ if(tool==='polyline'){
+
+  points.push(w);
+
+  preview={
+   type:'polyline',
+   pts:points,
+   color:color,
+   layer:currentLayer
+  };
+
+  render();
+
+  return;
+
+ }
+
+
+ if([
+  'line',
+  'wall',
+  'rect',
+  'circle',
+  'arc',
+  'dim',
+  'measure',
+  'move',
+  'copy',
+  'rotate',
+  'offset'
+ ].includes(tool)){
+
+  let type=tool;
+
+  if(
+   tool==='move' ||
+   tool==='copy' ||
+   tool==='rotate' ||
+   tool==='offset'
+  )
+   type='line';
+
+
+  preview={
+   type:type,
+   a:start,
+   b:w,
+   color:color,
+   layer:currentLayer
+  };
+
+  render();
+
+ }
+
+}
+
+
+/* POINTER UP */
+
+function pointerUp(e){
+
+ if(!drawing)
+  return;
+
+ let w=snap(
+  world(pos(e))
+ );
+
+
+ if(
+  orthoOn &&
+  start
+ ){
+
+  let dx=
+   w.x-start.x;
+
+  let dy=
+   w.y-start.y;
+
+  if(
+   Math.abs(dx)>
+   Math.abs(dy)
+  )
+   w.y=start.y;
+  else
+   w.x=start.x;
+
+ }
+
+
+ if(tool==='polyline'){
+
+  if(points.length>1){
+
+   saveHistory();
+
+   items.push({
+
+    type:'polyline',
+    pts:points.slice(),
+    color:color,
+    layer:currentLayer
+
+   });
+
   }
+
+  points=[];
+
+  preview=null;
+
+  drawing=false;
+
+  render();
+
+  return;
+
+ }
+
+
+ if(!preview){
+
+  drawing=false;
+
+  return;
+
+ }
+
+
+ if(tool==='measure'){
+
+  setStatus(
+   'Distance: '+
+   (
+    Math.hypot(
+     w.x-start.x,
+     w.y-start.y
+    )/100
+   ).toFixed(2)+
+   ' m'
+  );
+
+  preview=null;
+
+  drawing=false;
+
+  render();
+
+  return;
+
+ }
+
+
+ if(
+  tool==='move' ||
+  tool==='copy' ||
+  tool==='rotate' ||
+  tool==='offset'
+ ){
+
+  let i=selectedItem(
+   start
+  );
+
+
+  if(i>=0){
+
+   saveHistory();
+
+   let old=items[i];
+
+   let dx=w.x-start.x;
+   let dy=w.y-start.y;
+
+
+   if(tool==='copy'){
+
+    items.push({
+
+     ...old,
+
+     a:{
+      x:old.a.x+dx,
+      y:old.a.y+dy
+     },
+
+     b:old.b
+      ?{
+       x:old.b.x+dx,
+       y:old.b.y+dy
+      }
+      :undefined
+
+    });
+
+   }
+
+
+   else if(old.a){
+
+    old.a={
+     x:old.a.x+dx,
+     y:old.a.y+dy
+    };
+
+    if(old.b){
+
+     old.b={
+      x:old.b.x+dx,
+      y:old.b.y+dy
+     };
+
+    }
+
+   }
+
+  }
+
+
+  render();
+
+  preview=null;
+
+  drawing=false;
+
+  setStatus(
+   tool.toUpperCase()+
+   ' complete'
+  );
+
+  return;
+
+ }
+
+
+ saveHistory();
+
+ items.push({
+  ...preview,
+  b:w
+ });
+
+ preview=null;
+
+ drawing=false;
+
+ setStatus(
+  tool.toUpperCase()+
+  ' added'
+ );
+
+}
+
+
+/* POINTER EVENTS */
+
+c.addEventListener(
+ 'pointerdown',
+ pointerDown
 );
 
-document.getElementById("textOk").onclick=()=>{
+c.addEventListener(
+ 'pointermove',
+ pointerMove
+);
 
-  if(!pendingText) return;
+c.addEventListener(
+ 'pointerup',
+ pointerUp
+);
 
-  saveState();
+c.addEventListener(
+ 'pointercancel',
+ ()=>{
 
-  ctx.fillStyle="#111";
+  drawing=false;
+  preview=null;
+  render();
 
-  ctx.font="16px Arial";
+ }
+);
 
-  ctx.fillText(
-    textInput.value || "Room",
-    pendingText.x,
-    pendingText.y
-  );
 
-  pendingText=null;
+/* TOOL */
 
-  textPanel.classList.remove("show");
+document.getElementById(
+ 'tool'
+).onchange=e=>{
 
-  status.textContent="Text placed";
+ tool=e.target.value;
+
+ setStatus(
+  'Tool: '+
+  tool.toUpperCase()
+ );
+
 };
 
-tool.onchange=()=>{
 
-  textPanel.classList.toggle(
-    "show",
-    tool.value==="text"
-  );
+/* COLOR */
 
-  status.textContent=
-    tool.value==="measure"
-    ? "Draw a line to measure distance"
-    : "Tool: "+
-      tool.options[
-        tool.selectedIndex
-      ].text;
+document.getElementById(
+ 'color'
+).onchange=e=>{
+
+ color=e.target.value;
+
 };
 
-document.getElementById("grid").onclick=()=>{
 
-  gridOn=!gridOn;
+/* GRID */
 
-  if(gridOn){
+document.getElementById(
+ 'grid'
+).onclick=()=>{
 
-    drawGrid();
+ gridOn=!gridOn;
 
-    status.textContent=
-      "Grid ON — 25 px spacing";
+ render();
 
-  }else{
+ setStatus(
+  'Grid '+
+  (gridOn?'ON':'OFF')
+ );
 
-    restore(canvas.toDataURL());
+};
 
-    status.textContent=
-      "Grid OFF";
+
+/* SNAP */
+
+document.getElementById(
+ 'snap'
+).onclick=e=>{
+
+ snapOn=!snapOn;
+
+ e.target.classList.toggle(
+  'active',
+  snapOn
+ );
+
+ setStatus(
+  'Object snap '+
+  (snapOn?'ON':'OFF')
+ );
+
+};
+
+
+/* ORTHO */
+
+document.getElementById(
+ 'ortho'
+).onclick=e=>{
+
+ orthoOn=!orthoOn;
+
+ e.target.classList.toggle(
+  'active',
+  orthoOn
+ );
+
+ setStatus(
+  'Ortho '+
+  (orthoOn?'ON':'OFF')
+ );
+
+};
+
+
+/* UNDO */
+
+document.getElementById(
+ 'undo'
+).onclick=()=>{
+
+ if(undoStack.length){
+
+  redoStack.push(
+   JSON.stringify(items)
+  );
+
+  items=JSON.parse(
+   undoStack.pop()
+  );
+
+  render();
+
+ }
+
+};
+
+
+/* REDO */
+
+document.getElementById(
+ 'redo'
+).onclick=()=>{
+
+ if(redoStack.length){
+
+  undoStack.push(
+   JSON.stringify(items)
+  );
+
+  items=JSON.parse(
+   redoStack.pop()
+  );
+
+  render();
+
+ }
+
+};
+
+
+/* CLEAR */
+
+document.getElementById(
+ 'clear'
+).onclick=()=>{
+
+ saveHistory();
+
+ items=[];
+
+ render();
+
+};
+
+
+/* NEW */
+
+document.getElementById(
+ 'new'
+).onclick=()=>{
+
+ if(
+  confirm(
+   'Start a new drawing?'
+  )
+ ){
+
+  saveHistory();
+
+  items=[];
+
+  ox=0;
+  oy=0;
+  scale=1;
+
+  render();
+
+ }
+
+};
+
+
+/* ZOOM */
+
+document.getElementById(
+ 'zoomIn'
+).onclick=()=>{
+
+ scale=Math.min(
+  5,
+  scale*1.25
+ );
+
+ render();
+
+};
+
+
+document.getElementById(
+ 'zoomOut'
+).onclick=()=>{
+
+ scale=Math.max(
+  .2,
+  scale/1.25
+ );
+
+ render();
+
+};
+
+
+/* FIT */
+
+document.getElementById(
+ 'fit'
+).onclick=()=>{
+
+ scale=1;
+ ox=0;
+ oy=0;
+
+ render();
+
+};
+
+
+/* PNG */
+
+document.getElementById(
+ 'png'
+).onclick=()=>{
+
+ let a=document.createElement(
+  'a'
+ );
+
+ a.download=
+  'RK-CAD-2021-Drawing.png';
+
+ a.href=
+  c.toDataURL(
+   'image/png'
+  );
+
+ a.click();
+
+};
+
+
+/* SAVE */
+
+document.getElementById(
+ 'save'
+).onclick=()=>{
+
+ let blob=new Blob(
+
+  [
+   JSON.stringify({
+    version:'RK-CAD-2021',
+    layers:layers,
+    items:items
+   })
+  ],
+
+  {
+   type:'application/json'
   }
-};
 
-document.getElementById("undo").onclick=()=>{
+ );
 
-  if(history.length){
+ let a=document.createElement(
+  'a'
+ );
 
-    restore(history.pop());
+ a.download=
+  'RK-CAD-Drawing.rkcad';
 
-    status.textContent="Undo";
-  }
-};
-
-document.getElementById("clear").onclick=()=>{
-
-  saveState();
-
-  ctx.fillStyle="#fff";
-
-  ctx.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
+ a.href=
+  URL.createObjectURL(
+   blob
   );
 
-  drawGrid();
+ a.click();
 
-  status.textContent=
-    "Canvas cleared";
 };
 
-document.getElementById("save").onclick=()=>{
 
-  const a=document.createElement("a");
+/* OPEN */
 
-  a.download="RK-CAD-Drawing.png";
+document.getElementById(
+ 'open'
+).onclick=()=>{
 
-  a.href=canvas.toDataURL("image/png");
+ let x=document.createElement(
+  'input'
+ );
 
-  a.click();
+ x.type='file';
 
-  status.textContent=
-    "PNG saved";
+ x.accept='.rkcad,.json';
+
+ x.onchange=()=>{
+
+  let f=new FileReader();
+
+  f.onload=()=>{
+
+   try{
+
+    let d=
+     JSON.parse(
+      f.result
+     );
+
+    items=d.items||[];
+
+    render();
+
+    setStatus(
+     'Drawing opened'
+    );
+
+   }
+
+   catch(e){
+
+    alert(
+     'Invalid drawing file'
+    );
+
+   }
+
+  };
+
+  f.readAsText(
+   x.files[0]
+  );
+
+ };
+
+ x.click();
+
 };
+
+
+/* DXF EXPORT */
+
+document.getElementById(
+ 'exportDxf'
+).onclick=()=>{
+
+ let out=
+  '0\nSECTION\n2\nENTITIES\n';
+
+
+ items.forEach(
+  it=>{
+
+   if(
+    [
+     'line',
+     'wall',
+     'dim'
+    ].includes(it.type)
+   ){
+
+    out+=
+     '0\nLINE\n'+
+     '8\n'+
+     it.layer+
+     '\n'+
+     '10\n'+
+     it.a.x+
+     '\n'+
+     '20\n'+
+     it.a.y+
+     '\n'+
+     '11\n'+
+     it.b.x+
+     '\n'+
+     '21\n'+
+     it.b.y+
+     '\n';
+
+   }
+
+
+   else if(
+    it.type==='circle'
+   ){
+
+    out+=
+     '0\nCIRCLE\n'+
+     '8\n'+
+     it.layer+
+     '\n'+
+     '10\n'+
+     it.a.x+
+     '\n'+
+     '20\n'+
+     it.a.y+
+     '\n'+
+     '40\n'+
+     Math.hypot(
+      it.b.x-it.a.x,
+      it.b.y-it.a.y
+     )+
+     '\n';
+
+   }
+
+  }
+ );
+
+
+ out+=
+  '0\nENDSEC\n0\nEOF\n';
+
+
+ let a=document.createElement(
+  'a'
+ );
+
+ a.download=
+  'RK-CAD-Drawing.dxf';
+
+ a.href=
+  URL.createObjectURL(
+   new Blob(
+    [out],
+    {
+     type:'text/plain'
+    }
+   )
+  );
+
+ a.click();
+
+};
+
+
+/* LAYERS */
+
+document.getElementById(
+ 'layers'
+).onclick=()=>{
+
+ document
+  .getElementById(
+   'layerPanel'
+  )
+  .classList.toggle(
+   'show'
+  );
+
+};
+
+
+document.getElementById(
+ 'addLayer'
+).onclick=()=>{
+
+ let n=
+  document
+   .getElementById(
+    'layerName'
+   )
+   .value
+   .trim();
+
+
+ if(
+  n &&
+  !layers.includes(n)
+ ){
+
+  layers.push(n);
+
+  let o=
+   document.createElement(
+    'option'
+   );
+
+  o.textContent=n;
+
+  document
+   .getElementById(
+    'layerList'
+   )
+   .appendChild(o);
+
+ }
+
+};
+
+
+document.getElementById(
+ 'setLayer'
+).onclick=()=>{
+
+ currentLayer=
+  document.getElementById(
+   'layerList'
+  ).value;
+
+ setStatus(
+  'Current layer: '+
+  currentLayer
+ );
+
+};
+
+
+document.getElementById(
+ 'delLayer'
+).onclick=()=>{
+
+ let n=
+  document.getElementById(
+   'layerList'
+  ).value;
+
+ if(n==='0')
+  return;
+
+ layers=
+  layers.filter(
+   x=>x!==n
+  );
+
+ let option=
+  document.querySelector(
+   '#layerList option[value="'+n+'"]'
+  );
+
+ if(option)
+  option.remove();
+
+ currentLayer='0';
+
+};
+
+
+/* MOUSE WHEEL ZOOM */
+
+c.addEventListener(
+ 'wheel',
+ e=>{
+
+  e.preventDefault();
+
+  scale=Math.max(
+   .2,
+   Math.min(
+    5,
+    scale*
+    (
+     e.deltaY<0
+      ?1.1
+      :.9
+    )
+   )
+  );
+
+  render();
+
+ },
+ {
+  passive:false
+ }
+);
+
+
+/* START */
 
 window.addEventListener(
-  "resize",
-  resize
+ 'resize',
+ resize
 );
 
 resize();
