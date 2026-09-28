@@ -5,78 +5,670 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#111827">
 <title>RK CAD - Drawing</title>
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#111827;color:#fff;overflow:hidden}
-.top{height:58px;display:flex;align-items:center;gap:8px;padding:8px;background:#1f2937}
-.top h1{font-size:18px;margin:0 8px 0 0}
-button,select{min-height:42px;border:1px solid #4b5563;border-radius:8px;background:#374151;color:#fff;padding:8px 12px;font-size:15px}
-button:active{transform:scale(.97)}
-#canvas{display:block;background:#fff;touch-action:none;width:100%;height:calc(100vh - 58px)}
-.status{position:fixed;left:10px;bottom:10px;background:#111827dd;padding:7px 10px;border-radius:7px;font-size:12px}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#111827;
+  color:#fff;
+  overflow:hidden;
+}
+
+.top{
+  min-height:58px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 8px;
+  background:#1f2937;
+  overflow-x:auto;
+  white-space:nowrap;
+}
+
+.top h1{
+  font-size:18px;
+  margin:0 8px 0 0;
+}
+
+button,select,input{
+  min-height:42px;
+  border:1px solid #4b5563;
+  border-radius:8px;
+  background:#374151;
+  color:#fff;
+  padding:8px 11px;
+  font-size:14px;
+}
+
+button:active{
+  transform:scale(.97);
+}
+
+#canvas{
+  display:block;
+  background:#fff;
+  width:100%;
+  height:calc(100vh - 58px);
+  touch-action:none;
+}
+
+.status{
+  position:fixed;
+  left:10px;
+  bottom:10px;
+  background:#111827dd;
+  padding:7px 10px;
+  border-radius:7px;
+  font-size:12px;
+  z-index:3;
+}
+
+.panel{
+  position:fixed;
+  right:10px;
+  top:68px;
+  background:#111827ee;
+  padding:10px;
+  border:1px solid #4b5563;
+  border-radius:10px;
+  display:none;
+  z-index:4;
+  max-width:220px;
+}
+
+.panel.show{
+  display:block;
+}
+
+.panel label{
+  display:block;
+  font-size:12px;
+  margin:5px 0;
+}
+
+.panel input{
+  width:100%;
+  min-height:38px;
+}
 </style>
 </head>
+
 <body>
+
 <div class="top">
-<h1>RK CAD</h1>
-<select id="tool" aria-label="Drawing tool">
-<option value="pen">Line / Pen</option>
-<option value="rect">Rectangle</option>
-<option value="circle">Circle</option>
-<option value="erase">Eraser</option>
-</select>
-<button id="undo">Undo</button>
-<button id="clear">Clear</button>
-<button id="save">Save PNG</button>
+  <h1>RK CAD</h1>
+
+  <select id="tool">
+    <option value="pen">Line / Pen</option>
+    <option value="wall">Wall</option>
+    <option value="rect">Rectangle</option>
+    <option value="circle">Circle</option>
+    <option value="dimension">Dimension</option>
+    <option value="text">Text</option>
+    <option value="measure">Measure</option>
+    <option value="erase">Eraser</option>
+  </select>
+
+  <button id="grid">Grid</button>
+  <button id="undo">Undo</button>
+  <button id="clear">Clear</button>
+  <button id="save">Save PNG</button>
 </div>
+
+<div class="panel" id="textPanel">
+  <label for="textInput">Text</label>
+  <input id="textInput" value="Room">
+  <button id="textOk" style="margin-top:7px;width:100%">
+    Place Text
+  </button>
+</div>
+
 <canvas id="canvas"></canvas>
-<div class="status" id="status">Ready — touch and draw</div>
+
+<div class="status" id="status">
+  Ready — choose a tool and draw
+</div>
+
 <script>
-const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
-const tool=document.getElementById("tool"),status=document.getElementById("status");
-let drawing=false,startX=0,startY=0,lastX=0,lastY=0,snapshot=null;
+
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+const tool=document.getElementById("tool");
+const status=document.getElementById("status");
+
+const textPanel=document.getElementById("textPanel");
+const textInput=document.getElementById("textInput");
+
+let drawing=false;
+let startX=0;
+let startY=0;
+let lastX=0;
+let lastY=0;
+let snapshot=null;
+
 let history=[];
+let gridOn=false;
+let pendingText=null;
+
+const SCALE=20;
+
 function resize(){
-  const old=document.createElement("canvas"); old.width=canvas.width; old.height=canvas.height;
-  if(canvas.width&&canvas.height) old.getContext("2d").drawImage(canvas,0,0);
-  canvas.width=canvas.clientWidth; canvas.height=canvas.clientHeight;
-  ctx.fillStyle="#fff"; ctx.fillRect(0,0,canvas.width,canvas.height);
-  if(old.width&&old.height) ctx.drawImage(old,0,0,old.width,old.height,0,0,canvas.width,canvas.height);
-  ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#111";
+
+  const old=document.createElement("canvas");
+
+  old.width=canvas.width;
+  old.height=canvas.height;
+
+  if(canvas.width && canvas.height){
+    old.getContext("2d").drawImage(canvas,0,0);
+  }
+
+  canvas.width=canvas.clientWidth;
+  canvas.height=canvas.clientHeight;
+
+  ctx.fillStyle="#fff";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if(old.width && old.height){
+    ctx.drawImage(
+      old,
+      0,0,old.width,old.height,
+      0,0,canvas.width,canvas.height
+    );
+  }
+
+  drawGrid();
+
+  ctx.lineWidth=2;
+  ctx.lineCap="round";
+  ctx.lineJoin="round";
+  ctx.strokeStyle="#111";
 }
+
 function pos(e){
- const r=canvas.getBoundingClientRect();
- return {x:(e.clientX-r.left)*(canvas.width/r.width),y:(e.clientY-r.top)*(canvas.height/r.height)};
+
+  const r=canvas.getBoundingClientRect();
+
+  return {
+    x:(e.clientX-r.left)*(canvas.width/r.width),
+    y:(e.clientY-r.top)*(canvas.height/r.height)
+  };
 }
-function saveState(){history.push(canvas.toDataURL());if(history.length>30)history.shift()}
+
+function saveState(){
+
+  history.push(canvas.toDataURL());
+
+  if(history.length>40){
+    history.shift();
+  }
+}
+
 function restore(data){
- const im=new Image();im.onload=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(im,0,0,canvas.width,canvas.height)};im.src=data;
+
+  const im=new Image();
+
+  im.onload=()=>{
+
+    ctx.clearRect(
+      0,0,
+      canvas.width,
+      canvas.height
+    );
+
+    ctx.fillStyle="#fff";
+
+    ctx.fillRect(
+      0,0,
+      canvas.width,
+      canvas.height
+    );
+
+    ctx.drawImage(
+      im,
+      0,0,
+      canvas.width,
+      canvas.height
+    );
+
+    drawGrid();
+  };
+
+  im.src=data;
 }
-canvas.addEventListener("pointerdown",e=>{
- e.preventDefault();canvas.setPointerCapture(e.pointerId);
- const p=pos(e);drawing=true;startX=lastX=p.x;startY=lastY=p.y;
- saveState();snapshot=ctx.getImageData(0,0,canvas.width,canvas.height);
-});
-canvas.addEventListener("pointermove",e=>{
- if(!drawing)return;e.preventDefault();const p=pos(e);
- if(tool.value==="pen"||tool.value==="erase"){
-  ctx.strokeStyle=tool.value==="erase"?"#fff":"#111";ctx.lineWidth=tool.value==="erase"?20:2;
-  ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(p.x,p.y);ctx.stroke();lastX=p.x;lastY=p.y;
- }else{
-  ctx.putImageData(snapshot,0,0);ctx.strokeStyle="#111";ctx.lineWidth=2;ctx.beginPath();
-  if(tool.value==="rect")ctx.rect(startX,startY,p.x-startX,p.y-startY);
-  else{const r=Math.hypot(p.x-startX,p.y-startY);ctx.arc(startX,startY,r,0,Math.PI*2)}
+
+function drawGrid(){
+
+  if(!gridOn) return;
+
+  ctx.save();
+
+  ctx.strokeStyle="#dfe3e8";
+  ctx.lineWidth=1;
+
+  const step=25;
+
+  for(let x=0;x<canvas.width;x+=step){
+
+    ctx.beginPath();
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,canvas.height);
+    ctx.stroke();
+  }
+
+  for(let y=0;y<canvas.height;y+=step){
+
+    ctx.beginPath();
+    ctx.moveTo(0,y);
+    ctx.lineTo(canvas.width,y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function meters(px){
+
+  return (px/SCALE).toFixed(2);
+}
+
+function drawDimension(x1,y1,x2,y2){
+
+  const dx=x2-x1;
+  const dy=y2-y1;
+
+  const len=Math.hypot(dx,dy);
+
+  if(!len) return;
+
+  const ux=dx/len;
+  const uy=dy/len;
+
+  const nx=-uy;
+  const ny=ux;
+
+  const off=14;
+
+  const ax=x1+nx*off;
+  const ay=y1+ny*off;
+
+  const bx=x2+nx*off;
+  const by=y2+ny*off;
+
+  ctx.save();
+
+  ctx.strokeStyle="#111";
+  ctx.fillStyle="#111";
+  ctx.lineWidth=1.5;
+
+  ctx.beginPath();
+
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(ax,ay);
+
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(bx,by);
+
+  ctx.moveTo(ax,ay);
+  ctx.lineTo(bx,by);
+
   ctx.stroke();
- }
+
+  const ah=7;
+
+  ctx.beginPath();
+
+  ctx.moveTo(ax,ay);
+  ctx.lineTo(
+    ax+ux*ah+nx*ah/2,
+    ay+uy*ah+ny*ah/2
+  );
+
+  ctx.moveTo(ax,ay);
+  ctx.lineTo(
+    ax+ux*ah-nx*ah/2,
+    ay+uy*ah-ny*ah/2
+  );
+
+  ctx.moveTo(bx,by);
+  ctx.lineTo(
+    bx-ux*ah+nx*ah/2,
+    by-uy*ah+ny*ah/2
+  );
+
+  ctx.moveTo(bx,by);
+  ctx.lineTo(
+    bx-ux*ah-nx*ah/2,
+    by-uy*ah-ny*ah/2
+  );
+
+  ctx.stroke();
+
+  ctx.font="13px Arial";
+  ctx.textAlign="center";
+  ctx.textBaseline="bottom";
+
+  ctx.fillText(
+    meters(len)+" m",
+    (ax+bx)/2,
+    (ay+by)/2-3
+  );
+
+  ctx.restore();
+}
+
+function preview(){
+
+  ctx.putImageData(snapshot,0,0);
+
+  drawGrid();
+
+  const dx=lastX-startX;
+  const dy=lastY-startY;
+
+  ctx.strokeStyle="#111";
+  ctx.fillStyle="#111";
+  ctx.lineWidth=2;
+
+  ctx.beginPath();
+
+  if(tool.value==="rect"){
+
+    ctx.rect(
+      startX,
+      startY,
+      dx,
+      dy
+    );
+
+  }else if(tool.value==="circle"){
+
+    const r=Math.hypot(dx,dy);
+
+    ctx.arc(
+      startX,
+      startY,
+      r,
+      0,
+      Math.PI*2
+    );
+
+  }else if(tool.value==="wall"){
+
+    ctx.lineWidth=10;
+
+    ctx.moveTo(startX,startY);
+    ctx.lineTo(lastX,lastY);
+  }
+
+  ctx.stroke();
+
+  if(tool.value==="dimension"){
+
+    drawDimension(
+      startX,
+      startY,
+      lastX,
+      lastY
+    );
+  }
+
+  if(tool.value==="measure"){
+
+    ctx.save();
+
+    ctx.strokeStyle="#555";
+    ctx.setLineDash([5,4]);
+
+    ctx.beginPath();
+
+    ctx.moveTo(startX,startY);
+    ctx.lineTo(lastX,lastY);
+
+    ctx.stroke();
+
+    ctx.restore();
+
+    ctx.fillStyle="#111";
+    ctx.font="14px Arial";
+
+    ctx.fillText(
+      meters(Math.hypot(dx,dy))+" m",
+      lastX+8,
+      lastY-8
+    );
+  }
+}
+
+canvas.addEventListener("pointerdown",e=>{
+
+  e.preventDefault();
+
+  canvas.setPointerCapture(e.pointerId);
+
+  const p=pos(e);
+
+  if(tool.value==="text"){
+
+    pendingText=p;
+
+    textPanel.classList.add("show");
+
+    textInput.focus();
+
+    return;
+  }
+
+  drawing=true;
+
+  startX=lastX=p.x;
+  startY=lastY=p.y;
+
+  saveState();
+
+  snapshot=ctx.getImageData(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 });
-canvas.addEventListener("pointerup",()=>{drawing=false;status.textContent="Drawing saved in Undo history"});
-canvas.addEventListener("pointercancel",()=>drawing=false);
-document.getElementById("undo").onclick=()=>{if(history.length){restore(history.pop());status.textContent="Undo"}}; 
-document.getElementById("clear").onclick=()=>{saveState();ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);status.textContent="Canvas cleared"};
-document.getElementById("save").onclick=()=>{
- const a=document.createElement("a");a.download="RK-CAD-Drawing.png";a.href=canvas.toDataURL("image/png");a.click();status.textContent="PNG saved";
+
+canvas.addEventListener("pointermove",e=>{
+
+  if(!drawing) return;
+
+  e.preventDefault();
+
+  const p=pos(e);
+
+  lastX=p.x;
+  lastY=p.y;
+
+  if(
+    tool.value==="pen" ||
+    tool.value==="erase"
+  ){
+
+    ctx.strokeStyle=
+      tool.value==="erase"
+      ? "#fff"
+      : "#111";
+
+    ctx.lineWidth=
+      tool.value==="erase"
+      ? 22
+      : 2;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      startX,
+      startY
+    );
+
+    ctx.lineTo(
+      lastX,
+      lastY
+    );
+
+    ctx.stroke();
+
+    startX=lastX;
+    startY=lastY;
+
+  }else{
+
+    preview();
+  }
+});
+
+canvas.addEventListener("pointerup",()=>{
+
+  if(!drawing) return;
+
+  drawing=false;
+
+  if(tool.value==="measure"){
+
+    status.textContent=
+      "Distance: "+
+      meters(
+        Math.hypot(
+          lastX-startX,
+          lastY-startY
+        )
+      )+
+      " m";
+
+  }else{
+
+    status.textContent=
+      "Drawing added to Undo history";
+  }
+});
+
+canvas.addEventListener(
+  "pointercancel",
+  ()=>{
+    drawing=false;
+  }
+);
+
+document.getElementById("textOk").onclick=()=>{
+
+  if(!pendingText) return;
+
+  saveState();
+
+  ctx.fillStyle="#111";
+
+  ctx.font="16px Arial";
+
+  ctx.fillText(
+    textInput.value || "Room",
+    pendingText.x,
+    pendingText.y
+  );
+
+  pendingText=null;
+
+  textPanel.classList.remove("show");
+
+  status.textContent="Text placed";
 };
-window.addEventListener("resize",resize); resize();
+
+tool.onchange=()=>{
+
+  textPanel.classList.toggle(
+    "show",
+    tool.value==="text"
+  );
+
+  status.textContent=
+    tool.value==="measure"
+    ? "Draw a line to measure distance"
+    : "Tool: "+
+      tool.options[
+        tool.selectedIndex
+      ].text;
+};
+
+document.getElementById("grid").onclick=()=>{
+
+  gridOn=!gridOn;
+
+  if(gridOn){
+
+    drawGrid();
+
+    status.textContent=
+      "Grid ON — 25 px spacing";
+
+  }else{
+
+    restore(canvas.toDataURL());
+
+    status.textContent=
+      "Grid OFF";
+  }
+};
+
+document.getElementById("undo").onclick=()=>{
+
+  if(history.length){
+
+    restore(history.pop());
+
+    status.textContent="Undo";
+  }
+};
+
+document.getElementById("clear").onclick=()=>{
+
+  saveState();
+
+  ctx.fillStyle="#fff";
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  drawGrid();
+
+  status.textContent=
+    "Canvas cleared";
+};
+
+document.getElementById("save").onclick=()=>{
+
+  const a=document.createElement("a");
+
+  a.download="RK-CAD-Drawing.png";
+
+  a.href=canvas.toDataURL("image/png");
+
+  a.click();
+
+  status.textContent=
+    "PNG saved";
+};
+
+window.addEventListener(
+  "resize",
+  resize
+);
+
+resize();
+
 </script>
+
 </body>
 </html>
