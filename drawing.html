@@ -1,9 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<meta name="theme-color" content="#20252b">
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width,initial-scale=1,user-scalable=no">
+
 <title>RK CAD 2021 Style</title>
 
 <style>
@@ -11,65 +12,62 @@
 
 html,body{
  margin:0;
+ width:100%;
  height:100%;
+ overflow:hidden;
  font-family:Arial,sans-serif;
  background:#20252b;
- color:#eee;
- overflow:hidden
 }
 
 #app{
  height:100%;
  display:flex;
- flex-direction:column
+ flex-direction:column;
 }
 
-#top{
- height:52px;
+#top,#tools{
  display:flex;
  align-items:center;
  gap:6px;
- padding:5px 7px;
+ padding:6px;
  background:#2b3036;
  overflow:auto;
- white-space:nowrap
+ white-space:nowrap;
 }
 
-#top b{
- font-size:16px;
- margin-right:8px;
- color:#f0f0f0
+#top{height:55px}
+#tools{height:52px}
+
+.brand{
+ color:white;
+ font-size:19px;
+ font-weight:bold;
+ margin-right:5px;
 }
 
 button,select,input{
  background:#353b42;
- color:#eee;
+ color:white;
  border:1px solid #59616a;
- border-radius:5px;
- min-height:38px;
- padding:7px 9px;
- font-size:13px
+ border-radius:7px;
+ min-height:40px;
+ padding:7px 10px;
+ font-size:13px;
+}
+
+button:active{
+ transform:scale(.97);
 }
 
 button.active{
- background:#1769aa
-}
-
-#tools{
- height:46px;
- display:flex;
- gap:5px;
- align-items:center;
- padding:4px 7px;
- background:#30363d;
- overflow:auto;
- white-space:nowrap
+ background:#1769aa;
 }
 
 #main{
  position:relative;
  flex:1;
- min-height:0
+ min-height:0;
+ background:white;
 }
 
 #canvas{
@@ -77,65 +75,64 @@ button.active{
  inset:0;
  width:100%;
  height:100%;
- background:#fff;
- touch-action:none
+ background:white;
+ touch-action:none;
+}
+
+#coords,#status,#hint{
+ position:absolute;
+ background:#20252bdd;
+ color:white;
+ border-radius:6px;
+ padding:6px 9px;
+ z-index:5;
 }
 
 #coords{
- position:absolute;
  left:8px;
- bottom:7px;
- background:#20252bdd;
- padding:5px 8px;
- border-radius:4px;
+ bottom:8px;
  font:12px monospace;
- z-index:4
 }
 
-#help{
- position:absolute;
+#hint{
  right:8px;
- bottom:7px;
- background:#20252bdd;
- padding:5px 8px;
- border-radius:4px;
+ bottom:8px;
  font-size:11px;
- z-index:4
 }
 
-#layerPanel{
+#status{
+ left:50%;
+ top:8px;
+ transform:translateX(-50%);
+ display:none;
+}
+
+#layers{
  position:absolute;
  right:8px;
  top:8px;
- background:#20252bf2;
+ width:220px;
+ padding:10px;
+ background:#20252bf5;
+ color:white;
  border:1px solid #59616a;
- border-radius:6px;
- padding:8px;
- width:210px;
+ border-radius:7px;
  display:none;
- z-index:10
+ z-index:10;
 }
 
-#layerPanel.show{
- display:block
+#layers.show{
+ display:block;
 }
 
 .row{
  display:flex;
  gap:5px;
- margin:5px 0
+ margin:5px 0;
 }
 
 .row>*{
- flex:1
-}
-
-#status{
- height:25px;
- background:#181c20;
- color:#cbd2d9;
- font:11px monospace;
- padding:6px 9px
+ flex:1;
 }
 </style>
 </head>
@@ -146,19 +143,19 @@ button.active{
 
 <div id="top">
 
-<b>RK CAD</b>
+<div class="brand">RK CAD</div>
 
 <button id="new">New</button>
 <button id="undo">Undo</button>
 <button id="redo">Redo</button>
-<button id="open">Open</button>
 <button id="save">Save</button>
+<button id="open">Open</button>
 <button id="png">PNG</button>
 
-<button id="grid">Grid</button>
-<button id="snap">Snap</button>
+<button id="grid" class="active">Grid</button>
+<button id="snap" class="active">Snap</button>
 <button id="ortho">Ortho</button>
-<button id="layers">Layers</button>
+<button id="layerBtn">Layers</button>
 
 <select id="color">
 <option value="#111">Black</option>
@@ -168,6 +165,7 @@ button.active{
 </select>
 
 </div>
+
 
 <div id="tools">
 
@@ -185,8 +183,6 @@ button.active{
 <option value="erase">Erase</option>
 <option value="move">Move</option>
 <option value="copy">Copy</option>
-<option value="rotate">Rotate</option>
-<option value="offset">Offset</option>
 <option value="measure">Measure</option>
 
 </select>
@@ -194,27 +190,30 @@ button.active{
 <button id="zoomIn">Zoom +</button>
 <button id="zoomOut">Zoom −</button>
 <button id="fit">Fit</button>
-
-<button id="exportDxf">Export DXF</button>
+<button id="dxf">DXF</button>
 <button id="clear">Clear</button>
 
 </div>
+
 
 <div id="main">
 
 <canvas id="canvas"></canvas>
 
 <div id="coords">
-X: 0.00&nbsp;&nbsp; Y: 0.00
+X: 0.00 Y: 0.00
 </div>
 
-<div id="help">
-Tap/drag to draw • pinch/scroll to zoom • 2-finger pan
+<div id="status"></div>
+
+<div id="hint">
+2 taps = object • Ortho = H/V
 </div>
 
-<div id="layerPanel">
 
-<b>Layers</b>
+<div id="layers">
+
+<b>LAYERS</b>
 
 <div class="row">
 <input id="layerName" value="0">
@@ -229,85 +228,68 @@ Tap/drag to draw • pinch/scroll to zoom • 2-finger pan
 </select>
 
 <div class="row">
-<button id="delLayer">Delete</button>
-<button id="setLayer">Set Current</button>
+<button id="currentLayer">Current</button>
+<button id="deleteLayer">Delete</button>
 </div>
 
 </div>
 
 </div>
-
-<div id="status">
-Ready
 </div>
 
-</div>
 
 <script>
 
-const c=document.getElementById('canvas');
-const ctx=c.getContext('2d');
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
 
-let W=0;
-let H=0;
-
-let tool='select';
-let color='#111';
-
-let gridOn=true;
-let snapOn=true;
-let orthoOn=false;
+let W=0,H=0,dpr=1;
 
 let scale=1;
 let ox=0;
 let oy=0;
 
-let drawing=false;
-let start=null;
-let preview=null;
-let items=[];
+let gridOn=true;
+let snapOn=true;
+let orthoOn=false;
 
+let tool="select";
+let color="#111";
+let currentLayer="0";
+
+let items=[];
 let undoStack=[];
 let redoStack=[];
 
-let points=[];
-
-let currentLayer='0';
-
-let layers=[
- '0',
- 'WALL',
- 'DIMENSIONS',
- 'TEXT'
-];
-
-const gridStep=25;
-
-
-/* RESIZE */
+let firstPoint=null;
+let preview=null;
 
 function resize(){
 
- W=c.clientWidth;
- H=c.clientHeight;
+ dpr=window.devicePixelRatio||1;
 
- c.width=W*devicePixelRatio;
- c.height=H*devicePixelRatio;
+ W=canvas.clientWidth;
+ H=canvas.clientHeight;
 
- ctx.setTransform(
-  devicePixelRatio,
-  0,
-  0,
-  devicePixelRatio,
-  0,
-  0
- );
+ canvas.width=W*dpr;
+ canvas.height=H*dpr;
+
+ ctx.setTransform(dpr,0,0,dpr,0,0);
 
  render();
 }
 
 
-/* COORDINATES */
+function screenPoint(e){
+
+ const r=canvas.getBoundingClientRect();
+
+ return {
+  x:e.clientX-r.left,
+  y:e.clientY-r.top
+ };
+}
+
 
 function world(p){
 
@@ -315,7 +297,6 @@ function world(p){
   x:(p.x-ox)/scale,
   y:(p.y-oy)/scale
  };
-
 }
 
 
@@ -325,213 +306,165 @@ function screen(p){
   x:p.x*scale+ox,
   y:p.y*scale+oy
  };
-
 }
 
-
-function pos(e){
-
- const r=c.getBoundingClientRect();
-
- return {
-  x:e.clientX-r.left,
-  y:e.clientY-r.top
- };
-
-}
-
-
-/* SNAP */
 
 function snap(p){
 
- if(!snapOn)
-  return p;
+ if(!snapOn) return p;
+
+ const s=25;
 
  return {
-  x:Math.round(p.x/gridStep)*gridStep,
-  y:Math.round(p.y/gridStep)*gridStep
+  x:Math.round(p.x/s)*s,
+  y:Math.round(p.y/s)*s
  };
-
 }
 
 
-/* HISTORY */
+function ortho(a,b){
 
-function saveHistory(){
+ if(!orthoOn) return b;
 
- undoStack.push(
-  JSON.stringify(items)
- );
+ const dx=Math.abs(b.x-a.x);
+ const dy=Math.abs(b.y-a.y);
 
- if(undoStack.length>50)
+ if(dx>=dy)
+  return {x:b.x,y:a.y};
+
+ return {x:a.x,y:b.y};
+}
+
+
+function message(t){
+
+ const s=document.getElementById("status");
+
+ s.innerText=t;
+ s.style.display="block";
+
+ clearTimeout(window.msgTimer);
+
+ window.msgTimer=setTimeout(()=>{
+  s.style.display="none";
+ },1500);
+}
+
+
+function history(){
+
+ undoStack.push(JSON.stringify(items));
+
+ if(undoStack.length>80)
   undoStack.shift();
 
  redoStack=[];
-
 }
 
-
-/* STATUS */
-
-function setStatus(s){
-
- document.getElementById(
-  'status'
- ).textContent=s;
-
-}
-
-
-/* GRID */
 
 function drawGrid(){
 
- if(!gridOn)
-  return;
+ if(!gridOn) return;
 
  ctx.save();
 
- ctx.strokeStyle='#e6e6e6';
+ ctx.strokeStyle="#e5e5e5";
  ctx.lineWidth=1;
 
- const left=(-ox/scale);
- const top=(-oy/scale);
+ const step=25;
 
+ const left=(-ox)/scale;
  const right=(W-ox)/scale;
+
+ const top=(-oy)/scale;
  const bottom=(H-oy)/scale;
-
- let step=gridStep;
-
- while(step*scale<10)
-  step*=5;
 
  for(
   let x=Math.floor(left/step)*step;
-  x<right;
+  x<=right;
   x+=step
  ){
 
-  let a=screen({
-   x:x,
-   y:0
-  });
+  const p=screen({x:x,y:0});
 
   ctx.beginPath();
-  ctx.moveTo(a.x,0);
-  ctx.lineTo(a.x,H);
+  ctx.moveTo(p.x,0);
+  ctx.lineTo(p.x,H);
   ctx.stroke();
-
  }
 
  for(
   let y=Math.floor(top/step)*step;
-  y<bottom;
+  y<=bottom;
   y+=step
  ){
 
-  let a=screen({
-   x:0,
-   y:y
-  });
+  const p=screen({x:0,y:y});
 
   ctx.beginPath();
-  ctx.moveTo(0,a.y);
-  ctx.lineTo(W,a.y);
+  ctx.moveTo(0,p.y);
+  ctx.lineTo(W,p.y);
   ctx.stroke();
-
  }
 
  ctx.restore();
-
 }
 
 
-/* DRAW ITEM */
-
 function drawItem(it){
 
- const a=screen(
-  it.a||{x:0,y:0}
- );
+ ctx.save();
 
- const b=screen(
-  it.b||it.a||{x:0,y:0}
- );
-
- ctx.strokeStyle=it.color||'#111';
- ctx.fillStyle=it.color||'#111';
+ ctx.strokeStyle=it.color||"#111";
+ ctx.fillStyle=it.color||"#111";
 
  ctx.lineWidth=
-  (it.width||2)*
-  Math.max(.6,scale);
+  it.type==="wall"
+  ?Math.max(3,8*scale)
+  :Math.max(1,2*scale);
 
- ctx.lineCap='round';
- ctx.lineJoin='round';
-
- ctx.beginPath();
+ ctx.lineCap="round";
+ ctx.lineJoin="round";
 
 
  if(
-  it.type==='line' ||
-  it.type==='wall' ||
-  it.type==='dim' ||
-  it.type==='moveLine'
+  it.type==="line"||
+  it.type==="wall"||
+  it.type==="dim"
  ){
 
+  const a=screen(it.a);
+  const b=screen(it.b);
+
+  ctx.beginPath();
   ctx.moveTo(a.x,a.y);
   ctx.lineTo(b.x,b.y);
-
   ctx.stroke();
 
+  if(it.type==="dim"){
 
-  if(it.type==='wall'){
+   const d=
+    Math.hypot(
+     it.b.x-it.a.x,
+     it.b.y-it.a.y
+    )/100;
 
-   ctx.lineWidth=
-    10*Math.max(.5,scale);
-
-   ctx.beginPath();
-
-   ctx.moveTo(a.x,a.y);
-   ctx.lineTo(b.x,b.y);
-
-   ctx.stroke();
-
-  }
-
-
-  if(it.type==='dim'){
-
-   ctx.lineWidth=1;
-   ctx.strokeStyle='#555';
-
-   ctx.beginPath();
-
-   ctx.moveTo(a.x,a.y);
-   ctx.lineTo(b.x,b.y);
-
-   ctx.stroke();
-
-   ctx.fillStyle='#111';
-   ctx.font='12px Arial';
+   ctx.font="12px Arial";
 
    ctx.fillText(
-    (
-     Math.hypot(
-      it.b.x-it.a.x,
-      it.b.y-it.a.y
-     )/100
-    ).toFixed(2)+' m',
-    (a.x+b.x)/2+4,
-    (a.y+b.y)/2-4
+    d.toFixed(2)+" m",
+    (a.x+b.x)/2,
+    (a.y+b.y)/2-5
    );
-
   }
 
  }
 
 
- else if(it.type==='rect'){
+ else if(it.type==="rect"){
+
+  const a=screen(it.a);
+  const b=screen(it.b);
 
   ctx.strokeRect(
    a.x,
@@ -543,30 +476,40 @@ function drawItem(it){
  }
 
 
- else if(it.type==='circle'){
+ else if(it.type==="circle"){
 
+  const a=screen(it.a);
+  const b=screen(it.b);
+
+  const r=Math.hypot(
+   b.x-a.x,
+   b.y-a.y
+  );
+
+  ctx.beginPath();
   ctx.arc(
    a.x,
    a.y,
-   Math.hypot(
-    b.x-a.x,
-    b.y-a.y
-   ),
+   r,
    0,
    Math.PI*2
   );
-
   ctx.stroke();
 
  }
 
 
- else if(it.type==='arc'){
+ else if(it.type==="arc"){
 
-  let r=Math.hypot(
+  const a=screen(it.a);
+  const b=screen(it.b);
+
+  const r=Math.hypot(
    b.x-a.x,
    b.y-a.y
   );
+
+  ctx.beginPath();
 
   ctx.arc(
    a.x,
@@ -581,12 +524,14 @@ function drawItem(it){
  }
 
 
- else if(it.type==='text'){
+ else if(it.type==="text"){
 
-  ctx.font='16px Arial';
+  const a=screen(it.a);
+
+  ctx.font="16px Arial";
 
   ctx.fillText(
-   it.text||'Text',
+   it.text||"TEXT",
    a.x,
    a.y
   );
@@ -594,311 +539,703 @@ function drawItem(it){
  }
 
 
- else if(
-  it.type==='polyline' &&
-  it.pts
- ){
-
-  ctx.moveTo(
-   screen(it.pts[0]).x,
-   screen(it.pts[0]).y
-  );
-
-  it.pts
-   .slice(1)
-   .forEach(p=>{
-
-    ctx.lineTo(
-     screen(p).x,
-     screen(p).y
-    );
-
-   });
-
-  ctx.stroke();
-
- }
-
+ ctx.restore();
 }
 
-
-/* RENDER */
 
 function render(){
 
- ctx.fillStyle='#fff';
+ ctx.clearRect(0,0,W,H);
 
- ctx.fillRect(
-  0,
-  0,
-  W,
-  H
- );
+ ctx.fillStyle="white";
+
+ ctx.fillRect(0,0,W,H);
 
  drawGrid();
 
- items.forEach(
-  drawItem
- );
+ items.forEach(drawItem);
 
  if(preview)
   drawItem(preview);
-
 }
 
 
-/* SELECT */
+function nearestObject(p){
 
-function selectedItem(p){
+ let index=-1;
+ let best=15/scale;
 
- let best=-1;
+ items.forEach((it,i)=>{
 
- let d=12/scale;
+  if(!it.a)return;
 
- items.forEach(
-  (it,i)=>{
-
-   let q=it.a;
-
-   if(!q)
-    return;
-
-   let dd=Math.hypot(
-    p.x-q.x,
-    p.y-q.y
-   );
-
-   if(dd<d){
-
-    d=dd;
-    best=i;
-
-   }
-
-
-   if(it.b){
-
-    let dx=
-     it.b.x-it.a.x;
-
-    let dy=
-     it.b.y-it.a.y;
-
-    let t=
-     (
-      (p.x-it.a.x)*dx+
-      (p.y-it.a.y)*dy
-     )/
-     (dx*dx+dy*dy||1);
-
-    t=Math.max(
-     0,
-     Math.min(1,t)
-    );
-
-    let x=
-     it.a.x+t*dx;
-
-    let y=
-     it.a.y+t*dy;
-
-    dd=Math.hypot(
-     p.x-x,
-     p.y-y
-    );
-
-    if(dd<d){
-
-     d=dd;
-     best=i;
-
-    }
-
-   }
-
-  }
- );
-
- return best;
-
-}
-
-
-/* TEXT */
-
-function finishText(p){
-
- let t=prompt(
-  'Enter text',
-  'ROOM'
- );
-
- if(t){
-
-  saveHistory();
-
-  items.push({
-
-   type:'text',
-   a:p,
-   text:t,
-   layer:currentLayer,
-   color:color
-
-  });
-
-  render();
-
- }
-
-}
-
-
-/* POINTER DOWN */
-
-function pointerDown(e){
-
- const s=pos(e);
-
- const w=snap(
-  world(s)
- );
-
- start=w;
-
- drawing=true;
-
- points=[w];
-
-
- if(tool==='select'){
-
-  let i=selectedItem(w);
-
-  setStatus(
-   i>=0
-    ?'Selected item '+(i+1)
-    :'No item selected'
+  const d=Math.hypot(
+   p.x-it.a.x,
+   p.y-it.a.y
   );
 
-  drawing=false;
+  if(d<best){
+
+   best=d;
+   index=i;
+  }
+
+ });
+
+ return index;
+}
+
+
+function addObject(b){
+
+ if(!firstPoint)return;
+
+ b=ortho(firstPoint,b);
+
+ history();
+
+ items.push({
+
+  type:tool,
+
+  a:{...firstPoint},
+
+  b:{...b},
+
+  color:color,
+
+  layer:currentLayer
+
+ });
+
+ firstPoint=null;
+ preview=null;
+
+ render();
+
+ message(tool.toUpperCase()+" added");
+}
+
+
+canvas.addEventListener(
+"pointerdown",
+function(e){
+
+ const sp=screenPoint(e);
+
+ let p=snap(world(sp));
+
+
+ if(tool==="text"){
+
+  const text=prompt(
+   "Enter text",
+   "ROOM"
+  );
+
+  if(text){
+
+   history();
+
+   items.push({
+
+    type:"text",
+
+    a:p,
+
+    text:text,
+
+    color:color,
+
+    layer:currentLayer
+
+   });
+
+   render();
+  }
 
   return;
-
  }
 
 
- if(tool==='text'){
+ if(tool==="erase"){
 
-  finishText(w);
-
-  drawing=false;
-
-  return;
-
- }
-
-
- if(tool==='erase'){
-
-  let i=selectedItem(w);
+  const i=nearestObject(p);
 
   if(i>=0){
 
-   saveHistory();
+   history();
 
-   items.splice(
-    i,
-    1
-   );
+   items.splice(i,1);
 
    render();
 
-   setStatus(
-    'Erased'
-   );
-
+   message("Object erased");
   }
 
+  return;
  }
 
-}
 
+ if(tool==="select"){
 
-/* POINTER MOVE */
+  const i=nearestObject(p);
 
-function pointerMove(e){
+  message(
+   i>=0
+   ?"Object "+(i+1)+" selected"
+   :"No object"
+  );
 
- let s=pos(e);
-
- let w=snap(
-  world(s)
- );
-
- document.getElementById(
-  'coords'
- ).textContent=
-  'X: '+
-  (w.x/100).toFixed(2)+
-  '  Y: '+
-  (w.y/100).toFixed(2);
-
-
- if(!drawing)
   return;
+ }
 
 
  if(
-  orthoOn &&
-  start
+  ["line",
+   "rect",
+   "circle",
+   "arc",
+   "wall",
+   "dim",
+   "measure"
+  ].includes(tool)
  ){
 
-  let dx=
-   w.x-start.x;
+  if(!firstPoint){
 
-  let dy=
-   w.y-start.y;
+   firstPoint=p;
 
-  if(
-   Math.abs(dx)>
-   Math.abs(dy)
-  )
-   w.y=start.y;
-  else
-   w.x=start.x;
+   message(
+    "Start point set"
+   );
 
+  }else{
+
+   if(tool==="measure"){
+
+    const b2=ortho(
+     firstPoint,
+     p
+    );
+
+    const d=
+     Math.hypot(
+      b2.x-firstPoint.x,
+      b2.y-firstPoint.y
+     )/100;
+
+    message(
+     "Distance: "+
+     d.toFixed(2)+" m"
+    );
+
+    firstPoint=null;
+
+   }else{
+
+    addObject(p);
+   }
+  }
+
+  render();
  }
 
+});
 
- if(tool==='polyline'){
 
-  points.push(w);
+canvas.addEventListener(
+"pointermove",
+function(e){
+
+ const sp=screenPoint(e);
+
+ const p=snap(world(sp));
+
+ document.getElementById(
+  "coords"
+ ).innerText=
+ "X: "+
+ (p.x/100).toFixed(2)+
+ "  Y: "+
+ (p.y/100).toFixed(2);
+
+
+ if(firstPoint){
+
+  const b=ortho(firstPoint,p);
 
   preview={
-   type:'polyline',
-   pts:points,
+   type:tool,
+   a:firstPoint,
+   b:b,
    color:color,
    layer:currentLayer
   };
 
   render();
-
-  return;
-
  }
 
+});
 
- if([
-  'line',
-  'wall',
-  'rect',
-  'circle',
-  'arc',
-  'dim',
-  'measure',
-  'move',
-  'copy',
-  'rotate',
+
+document.getElementById(
+"tool"
+).onchange=function(){
+
+ tool=this.value;
+
+ firstPoint=null;
+ preview=null;
+
+ render();
+
+ message(
+  "Tool: "+
+  tool.toUpperCase()
+ );
+};
+
+
+document.getElementById(
+"color"
+).onchange=function(){
+
+ color=this.value;
+};
+
+
+document.getElementById(
+"grid"
+).onclick=function(){
+
+ gridOn=!gridOn;
+
+ this.classList.toggle(
+  "active",
+  gridOn
+ );
+
+ render();
+};
+
+
+document.getElementById(
+"snap"
+).onclick=function(){
+
+ snapOn=!snapOn;
+
+ this.classList.toggle(
+  "active",
+  snapOn
+ );
+
+ message(
+  "Snap "+
+  (snapOn?"ON":"OFF")
+ );
+};
+
+
+document.getElementById(
+"ortho"
+).onclick=function(){
+
+ orthoOn=!orthoOn;
+
+ this.classList.toggle(
+  "active",
+  orthoOn
+ );
+
+ message(
+  "Ortho "+
+  (orthoOn?"ON":"OFF")
+ );
+};
+
+
+document.getElementById(
+"undo"
+).onclick=function(){
+
+ if(!undoStack.length)return;
+
+ redoStack.push(
+  JSON.stringify(items)
+ );
+
+ items=JSON.parse(
+  undoStack.pop()
+ );
+
+ firstPoint=null;
+
+ render();
+};
+
+
+document.getElementById(
+"redo"
+).onclick=function(){
+
+ if(!redoStack.length)return;
+
+ undoStack.push(
+  JSON.stringify(items)
+ );
+
+ items=JSON.parse(
+  redoStack.pop()
+ );
+
+ render();
+};
+
+
+document.getElementById(
+"clear"
+).onclick=function(){
+
+ if(!items.length)return;
+
+ history();
+
+ items=[];
+
+ firstPoint=null;
+
+ preview=null;
+
+ render();
+
+ message("Drawing cleared");
+};
+
+
+document.getElementById(
+"new"
+).onclick=function(){
+
+ if(confirm(
+  "Start new drawing?"
+ )){
+
+  history();
+
+  items=[];
+
+  scale=1;
+  ox=0;
+  oy=0;
+
+  firstPoint=null;
+
+  preview=null;
+
+  render();
+ }
+};
+
+
+document.getElementById(
+"zoomIn"
+).onclick=function(){
+
+ scale=Math.min(
+  6,
+  scale*1.25
+ );
+
+ render();
+};
+
+
+document.getElementById(
+"zoomOut"
+).onclick=function(){
+
+ scale=Math.max(
+  .2,
+  scale/1.25
+ );
+
+ render();
+};
+
+
+document.getElementById(
+"fit"
+).onclick=function(){
+
+ scale=1;
+
+ ox=0;
+ oy=0;
+
+ render();
+};
+
+
+document.getElementById(
+"png"
+).onclick=function(){
+
+ const a=document.createElement("a");
+
+ a.download=
+ "RK-CAD-Drawing.png";
+
+ a.href=
+ canvas.toDataURL(
+  "image/png"
+ );
+
+ a.click();
+};
+
+
+document.getElementById(
+"save"
+).onclick=function(){
+
+ const data={
+  version:"RK-CAD-2021",
+  items:items
+ };
+
+ const blob=new Blob(
+  [JSON.stringify(data)],
+  {type:"application/json"}
+ );
+
+ const a=document.createElement("a");
+
+ a.download=
+ "RK-CAD-Drawing.rkcad";
+
+ a.href=
+ URL.createObjectURL(blob);
+
+ a.click();
+};
+
+
+document.getElementById(
+"open"
+).onclick=function(){
+
+ const input=
+ document.createElement("input");
+
+ input.type="file";
+
+ input.accept=
+ ".rkcad,.json";
+
+ input.onchange=function(){
+
+  const reader=
+  new FileReader();
+
+  reader.onload=function(){
+
+   try{
+
+    const data=
+    JSON.parse(
+     reader.result
+    );
+
+    items=
+    data.items||[];
+
+    render();
+
+    message(
+     "Drawing opened"
+    );
+
+   }catch(e){
+
+    alert(
+     "Invalid RK CAD file"
+    );
+   }
+  };
+
+  reader.readAsText(
+   input.files[0]
+  );
+ };
+
+ input.click();
+};
+
+
+document.getElementById(
+"layerBtn"
+).onclick=function(){
+
+ document.getElementById(
+  "layers"
+ ).classList.toggle(
+  "show"
+ );
+};
+
+
+document.getElementById(
+"addLayer"
+).onclick=function(){
+
+ const name=
+ document.getElementById(
+  "layerName"
+ ).value.trim();
+
+ if(!name)return;
+
+ const list=
+ document.getElementById(
+  "layerList"
+ );
+
+ const option=
+ document.createElement(
+  "option"
+ );
+
+ option.text=name;
+ option.value=name;
+
+ list.appendChild(option);
+};
+
+
+document.getElementById(
+"currentLayer"
+).onclick=function(){
+
+ currentLayer=
+ document.getElementById(
+  "layerList"
+ ).value;
+
+ message(
+  "Layer: "+
+  currentLayer
+ );
+};
+
+
+document.getElementById(
+"deleteLayer"
+).onclick=function(){
+
+ const list=
+ document.getElementById(
+  "layerList"
+ );
+
+ if(list.value==="0")return;
+
+ list.remove(
+  list.selectedIndex
+ );
+
+ currentLayer="0";
+};
+
+
+document.getElementById(
+"dxf"
+).onclick=function(){
+
+ let dxf=
+ "0\nSECTION\n2\nENTITIES\n";
+
+ items.forEach(
+ function(it){
+
+  if(
+   it.type==="line"||
+   it.type==="wall"||
+   it.type==="dim"
+  ){
+
+   dxf+=
+   "0\nLINE\n"+
+   "8\n"+
+   (it.layer||"0")+
+   "\n10\n"+
+   it.a.x+
+   "\n20\n"+
+   it.a.y+
+   "\n11\n"+
+   it.b.x+
+   "\n21\n"+
+   it.b.y+
+   "\n";
+  }
+
+  if(it.type==="circle"){
+
+   const r=
+   Math.hypot(
+    it.b.x-it.a.x,
+    it.b.y-it.a.y
+   );
+
+   dxf+=
+   "0\nCIRCLE\n"+
+   "8\n"+
+   (it.layer||"0")+
+   "\n10\n"+
+   it.a.x+
+   "\n20\n"+
+   it.a.y+
+   "\n40\n"+
+   r+
+   "\n";
+  }
+
+ });
+
+ dxf+=
+ "0\nENDSEC\n0\nEOF\n";
+
+ const blob=
+ new Blob(
+  [dxf],
+  {type:"text/plain"}
+ );
+
+ const a=
+ document.createElement("a");
+
+ a.download=
+ "RK-CAD-Drawing.dxf";
+
+ a.href=
+ URL.createObjectURL(blob);
+
+ a.click();
+};
+
+
+window.addEventListener(
+"resize",
+resize
+);
+
+resize();
+
+</script>
+
+</body>
+</html>',
   'offset'
  ].includes(tool)){
 
