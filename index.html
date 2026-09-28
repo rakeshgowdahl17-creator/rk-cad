@@ -81,14 +81,39 @@
         <p class="eyebrow">SUBSCRIPTION</p>
         <h2>Simple monthly plan</h2>
       </div>
-      <div class="price-card">
-        <div>
-          <p class="plan-name">RK CAD Monthly</p>
-          <div class="price">₹50 <span>/ month</span></div>
-          <p>Subscription availability and billing are handled through Google Play when the app is published.</p>
-        </div>
-        <a class="btn primary" href="#contact">Contact</a>
+<div class="price-card">
+  <div>
+    <p class="plan-name">RK CAD Monthly</p>
+    <div class="price">₹50 <span>/ month</span></div>
+    <p>Simple monthly subscription for RK CAD.</p>
+
+    <div class="payment-box">
+      <h3>Scan & Pay</h3>
+      <p>Pay securely using PhonePe</p>
+
+      <img
+        src="phonepe-qr.png"
+        alt="RK CAD PhonePe QR Code"
+        class="upi-qr"
+      >
+
+      <p class="upi-label">UPI ID</p>
+
+      <div class="upi-row">
+        <span id="upiId">9964314738-3@ybl</span>
+        <button type="button" onclick="copyUPI()">Copy</button>
       </div>
+
+      <p class="payment-name">Rakesha HL</p>
+
+      <button type="button" class="btn primary" onclick="paymentDone()">
+        I've Paid
+      </button>
+
+      <p id="paymentMessage" class="payment-message"></p>
+    </div>
+  </div>
+</div>
     </section>
 
     <section id="contact" class="section contact">
