@@ -16,7 +16,21 @@ a { color: inherit; }
   border-bottom: 1px solid #e7ebf2;
   backdrop-filter: blur(10px);
 }
-.brand { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+}
+
+.brand img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 8px;
+}
 .brand span, .hero h1 span { color: #1769e0; }
 .navbar nav { display: flex; gap: 28px; }
 .navbar nav a { text-decoration: none; font-weight: 600; color: #526070; }
