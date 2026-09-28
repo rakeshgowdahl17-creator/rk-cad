@@ -1,0 +1,105 @@
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  color: #14213d;
+  background: #f7f9fc;
+  line-height: 1.6;
+}
+a { color: inherit; }
+.navbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 7%;
+  background: rgba(255,255,255,.94);
+  border-bottom: 1px solid #e7ebf2;
+  backdrop-filter: blur(10px);
+}
+.brand { font-size: 24px; font-weight: 800; letter-spacing: -.5px; }
+.brand span, .hero h1 span { color: #1769e0; }
+.navbar nav { display: flex; gap: 28px; }
+.navbar nav a { text-decoration: none; font-weight: 600; color: #526070; }
+.navbar nav a:hover { color: #1769e0; }
+.menu-btn { display:none; border:0; background:transparent; font-size:24px; }
+
+.hero {
+  min-height: 78vh;
+  display: grid; grid-template-columns: 1.05fr .95fr;
+  gap: 60px; align-items: center;
+  padding: 80px 7%;
+  background: linear-gradient(135deg,#eef5ff,#ffffff);
+}
+.eyebrow { color:#1769e0; font-size:12px; font-weight:800; letter-spacing:2px; margin:0 0 10px; }
+.hero h1 { font-size: clamp(42px,6vw,76px); line-height:1.05; margin:0 0 22px; letter-spacing:-2px; }
+.lead { max-width:650px; font-size:19px; color:#5d6878; }
+.actions { display:flex; gap:14px; margin-top:30px; flex-wrap:wrap; }
+.btn { display:inline-block; padding:12px 20px; border-radius:10px; text-decoration:none; font-weight:800; }
+.primary { background:#1769e0; color:white; }
+.primary:hover { background:#0e55bd; }
+.secondary { background:white; border:1px solid #d8e0ec; color:#1769e0; }
+
+.hero-card { display:flex; justify-content:center; }
+.blueprint {
+  width:min(460px,90vw); aspect-ratio:1/1;
+  position:relative; overflow:hidden; border-radius:24px;
+  background:#fdfefe; border:1px solid #d9e4f3;
+  box-shadow:0 25px 60px rgba(27,70,130,.16);
+}
+.grid {
+  position:absolute; inset:0;
+  background-image: linear-gradient(#dce8f5 1px, transparent 1px),
+                    linear-gradient(90deg,#dce8f5 1px, transparent 1px);
+  background-size:32px 32px;
+}
+.wall { position:absolute; border:6px solid #1769e0; background:rgba(23,105,224,.05); }
+.wall-a { width:60%; height:42%; left:10%; top:15%; }
+.wall-b { width:34%; height:25%; right:10%; top:15%; }
+.wall-c { width:70%; height:22%; left:15%; bottom:15%; }
+.label { position:absolute; right:18px; bottom:16px; font-weight:900; color:#1769e0; }
+
+.section { padding:90px 7%; }
+.section-title { text-align:center; margin-bottom:42px; }
+.section-title h2 { margin:0; font-size:38px; letter-spacing:-1px; }
+.cards { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+.card {
+  background:white; border:1px solid #e4eaf2; border-radius:18px;
+  padding:26px; box-shadow:0 10px 25px rgba(20,33,61,.05);
+}
+.icon { font-size:30px; }
+.card h3 { margin:14px 0 8px; }
+.card p, .legal p, .contact-box p { color:#687587; }
+
+.pricing-section { background:#eef5ff; }
+.price-card {
+  max-width:760px; margin:auto; background:white; border-radius:22px;
+  padding:34px; display:flex; align-items:center; justify-content:space-between;
+  gap:30px; box-shadow:0 16px 40px rgba(20,70,140,.09);
+}
+.plan-name { font-weight:800; color:#1769e0; }
+.price { font-size:52px; font-weight:900; line-height:1; }
+.price span { font-size:17px; font-weight:600; color:#687587; }
+
+.contact-box {
+  max-width:760px; margin:auto; padding:28px; background:white;
+  border:1px solid #e4eaf2; border-radius:18px;
+}
+.contact-box a { color:#1769e0; font-weight:700; }
+
+.legal { padding-top:20px; }
+.legal-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.legal-grid article { background:white; padding:24px; border-radius:16px; border:1px solid #e4eaf2; }
+footer { text-align:center; padding:30px 7%; color:#778397; border-top:1px solid #e7ebf2; background:white; }
+
+@media (max-width: 850px) {
+  .navbar nav { display:none; }
+  .menu-btn { display:block; }
+  .hero { grid-template-columns:1fr; padding-top:55px; }
+  .cards { grid-template-columns:1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .hero h1 { font-size:44px; }
+  .section { padding:65px 5%; }
+  .cards, .legal-grid { grid-template-columns:1fr; }
+  .price-card { flex-direction:column; align-items:flex-start; }
+}
